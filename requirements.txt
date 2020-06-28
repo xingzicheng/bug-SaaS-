@@ -1,0 +1,6 @@
+Django==1.11.28
+pytz==2020.1
+qcloudsms-py==0.1.4
+redis==3.5.3
+django-redis==4.11.0
+

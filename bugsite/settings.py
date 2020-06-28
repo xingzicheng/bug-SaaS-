@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app01.apps.App01Config',
+    'web.apps.WebConfig',
+
 ]
 
 MIDDLEWARE = [
@@ -48,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'web.middleware.auth.AuthMiddleware',
 ]
 
 ROOT_URLCONF = 'bugsite.urls'
@@ -105,7 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+#LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'UTC'
 
@@ -120,6 +124,33 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+
+# ######## sms  ########
+
+# 腾讯云短信应用的 app_id  #必须大写
+TENCENT_SMS_APP_ID = 6666666666
+
+# 腾讯云短信应用的 app_key
+TENCENT_SMS_APP_KEY = "6666666666666666666666"
+
+# 腾讯云短信签名内容
+TENCENT_SMS_SIGN = "优雅如python"
+
+# DATABASES = {
+#     'default': {
+#         #'ENGINE': 'django.db.backends.sqlite3',
+#         #'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'django_login',
+#         'USER':'root',
+#         'PASSWORD':'123456',
+#         'HOST':'127.0.0.1',
+#         'PORT':'3306',
+#     }
+# }
 
 try:
     from .local_settings import *
