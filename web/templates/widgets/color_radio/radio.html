@@ -1,0 +1,13 @@
+
+{# 参考源码，将源码里的li标签换成了div和label，然后通过写样式，实现自定制插件 #}
+{% with id=widget.attrs.id %}
+    <div{% if id %} id="{{ id }}"{% endif %}{% if widget.attrs.class %} class="{{ widget.attrs.class }}"{% endif %}>
+        {% for group, options, index in widget.optgroups %}
+            {% for option in options %}
+                <label {% if option.attrs.id %} for="{{ option.attrs.id }}"{% endif %} >
+                    {% include option.template_name with widget=option %}
+                </label>
+            {% endfor %}
+        {% endfor %}
+    </div>
+{% endwith %}
