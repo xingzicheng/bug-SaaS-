@@ -1,6 +1,7 @@
 from django.conf.urls import url
 from web.views import account
 from web.views import home
+from web.views import project
 
 
 urlpatterns = [
@@ -11,7 +12,10 @@ urlpatterns = [
 
     url(r'^login/$', account.login, name='login'),
     url(r'^image/code/$', account.image_code, name='image_code'),
-    url(r'^logout/$', account.logout, name='logout'),
 
     url(r'^index/$', home.index, name='index'),
+
+    url(r'^logout/$', account.logout, name='logout'),
+    # 项目管理
+    url(r'^project/list/$', project.project_list, name='project_list'),
 ]

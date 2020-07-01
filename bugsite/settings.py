@@ -152,6 +152,16 @@ TENCENT_SMS_SIGN = "优雅如python"
 #     }
 # }
 
+# ########### 登录白名单：无需登录就可以访问的页面 ###########
+WHITE_REGEX_URL_LIST = [
+    "/register/",
+    "/send/sms/",
+    "/login/",
+    "/image/code/",
+    "/index/",
+]
+
+
 try:
     from .local_settings import *
 except ImportError:

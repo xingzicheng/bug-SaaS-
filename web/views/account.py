@@ -1,4 +1,6 @@
 """用户账户相关，登录注册"""
+import uuid
+import datetime
 from io import BytesIO
 from django.shortcuts import render, HttpResponse, redirect
 
@@ -17,7 +19,25 @@ def register(request):
     form = RegisterModelForm(data=request.POST)
     if form.is_valid():
         # 验证通过，写入数据库（密码要是密文）
-        form.save() # 把无关数据剔除，只将models的字段写入数据库
+        #form.save() # 把无关数据剔除，只将models的字段写入数据库
+
+        # 用户表中新建一条数据（注册）
+        instance = form.save()
+
+        # 创建交易记录
+        # 方式一
+        policy_object = models.PricePolicy.objects.filter(category=1, title="个人免费版").first()
+        models.Transaction.objects.create(
+            status=2,
+            order=str(uuid.uuid4()),
+            user=instance,
+            price_policy=policy_object,
+            count=0,
+            price=0,
+            start_datetime=datetime.datetime.now()
+        )
+
+
         return JsonResponse({'status': True, 'data': '/login/'})
 
     return JsonResponse({'status': False, 'error': form.errors})
