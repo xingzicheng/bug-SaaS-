@@ -24,6 +24,7 @@ def project_list(request):
         my_project_list = models.Project.objects.filter(creator=request.tracer.user)
         for row in my_project_list:
             if row.star:
+                #获取星标项目到底是我创建的还是参与的，使取消星标回到正确的位置
                 project_dict['star'].append({"value": row, 'type': 'my'})
             else:
                 project_dict['my'].append(row)

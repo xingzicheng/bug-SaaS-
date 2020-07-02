@@ -1,7 +1,9 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 from web.views import account
 from web.views import home
 from web.views import project
+from web.views import manage
+from web.views import wiki
 
 
 urlpatterns = [
@@ -22,4 +24,13 @@ urlpatterns = [
     # /project/star/join/1
     url(r'^project/star/(?P<project_type>\w+)/(?P<project_id>\d+)/$', project.project_star, name='project_star'),
     url(r'^project/unstar/(?P<project_type>\w+)/(?P<project_id>\d+)/$', project.project_unstar, name='project_unstar'),
+
+    url(r'^manage/(?P<project_id>\d+)/', include([
+        url(r'^dashboard/$', manage.dashboard, name='dashboard'),
+        url(r'^issues/$', manage.issues, name='issues'),
+        url(r'^statistics/$', manage.statistics, name='statistics'),
+        url(r'^file/$', manage.file, name='file'),
+        url(r'^wiki/$', wiki.wiki, name='wiki'),
+        url(r'^setting/$', manage.setting, name='setting'),
+    ], None, None)),
 ]
