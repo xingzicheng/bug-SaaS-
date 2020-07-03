@@ -5,6 +5,11 @@
         .panel-default{
             margin-top: 10px;
         }
+        .panel-default .panel-heading {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
         .panel-body{
             padding: 0;
         }
@@ -18,6 +23,14 @@
             min-height: 600px;
             margin-left: -1px;
         }
+            .title-list ul {
+            padding-left: 10px;
+        }
+
+        .title-list ul a {
+            display: block;
+            padding: 5px 0;
+        }
 
     </style>
 {% endblock %}
@@ -25,18 +38,37 @@
     <div class="container-fluid">
 
         <div class="panel panel-default">
-            <div class="panel-heading"><i class="fa fa-book" aria-hidden="true"></i> wiki文档</div>
+             <div class="panel-heading">
+                <div>
+                    <i class="fa fa-book" aria-hidden="true"></i> wiki文档
+                </div>
+                <div class="function">
+                    <a type="button" class="btn btn-success btn-xs" href="{% url 'wiki_add' project_id=request.tracer.project.id %}">
+                        <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建
+                    </a>
+                </div>
+            </div>
             <div class="panel-body">
                 <div class="col-sm-3 title-list">
-                    目录
+{#                    目录放在这里#}
+                    <ul id="catalog">
+
+
+                    </ul>
                 </div>
                 <div class="col-sm-9 content">
-                    <div style="text-align: center;margin-top: 50px;">
-                        <h4> 《{{ request.tracer.project.name }}》wiki文档库 </h4>
-                        <a href="#">
-                            <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建文章
-                        </a>
-                    </div>
+                    {% if wiki_object %}
+
+                        {{ wiki_object.content }}
+
+                    {% else %}
+                        <div style="text-align: center;margin-top: 50px;">
+                            <h4> 《{{ request.tracer.project.name }}》wiki文档库 </h4>
+                            <a href="{% url 'wiki_add' project_id=request.tracer.project.id %}">
+                                <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建文章
+                            </a>
+                        </div>
+                    {% endif %}
 
                 </div>
                 <div></div>
@@ -44,4 +76,45 @@
         </div>
 
     </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+
+        // http://127.0.0.1:8002/manage/2/wiki/detail/
+        var WIKI_DETAIL_URL = "{% url 'wiki' project_id=request.tracer.project.id %}";
+
+        $(function () {
+
+            initCatalog();
+
+        });
+
+        function initCatalog() {
+            $.ajax({
+                url: "{% url 'wiki_catalog' project_id=request.tracer.project.id %}",
+                type: "GET",
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        {#index用于循环索引，item用于循环对象#}
+                        $.each(res.data, function (index, item) {
+                            var href = WIKI_DETAIL_URL + "?wiki_id=" + item.id;
+                            {#创建一个li标签并且在里面无论有没有子目录都创建一个ul标签放着，方便添加目录#}
+                            var li = $("<li>").attr('id', "id_" + item.id).append( $('<a>').text(item.title).attr('href',href)  ).append($('<ul>'));
+
+                            if (!item.parent_id) {
+                                // 添加到catalog中
+                                $('#catalog').append(li);
+                            } else {
+                                $("#id_" + item.parent_id).children('ul').append(li);
+                            }
+                        })
+                    } else {
+                        alert("初始化目录失败");
+                    }
+                }
+            })
+        }
+    </script>
 {% endblock %}
