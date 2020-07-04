@@ -57,7 +57,7 @@ def login_sms(request):
     if request.method == 'GET':
         form = LoginSMSForm()
         return render(request, 'login_sms.html', {'form': form})
-
+    # POST
     form = LoginSMSForm(request.POST)
     if form.is_valid():
         # 用户输入正确，登录成功
@@ -67,7 +67,7 @@ def login_sms(request):
         user_object = models.UserInfo.objects.filter(mobile_phone=mobile_phone).first()
 
         request.session['user_id'] = user_object.id
-        request.session.set_expiry(60 * 60 * 24 * 14)
+        request.session.set_expiry(60 * 60 * 24 * 14) # 14天过期
 
         return JsonResponse({"status": True, 'data': "/index/"})
 

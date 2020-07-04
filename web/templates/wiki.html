@@ -23,7 +23,7 @@
             min-height: 600px;
             margin-left: -1px;
         }
-            .title-list ul {
+        .title-list ul {
             padding-left: 10px;
         }
 
@@ -43,14 +43,26 @@
                     <i class="fa fa-book" aria-hidden="true"></i> wiki文档
                 </div>
                 <div class="function">
-                    <a type="button" class="btn btn-success btn-xs" href="{% url 'wiki_add' project_id=request.tracer.project.id %}">
+                    <a type="button" class="btn btn-success btn-xs"
+                       href="{% url 'wiki_add' project_id=request.tracer.project.id %}">
                         <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建
                     </a>
+                    {% if wiki_object %}
+                         <a type="button" class="btn btn-primary btn-xs"
+                           href="{% url 'wiki_edit' project_id=request.tracer.project.id wiki_id=wiki_object.id %}">
+                        <i class="fa fa-edit" aria-hidden="true"></i> 编辑
+                    </a>
+                        <a type="button" class="btn btn-danger btn-xs"
+                           href="{% url 'wiki_delete' project_id=request.tracer.project.id wiki_id=wiki_object.id %}"
+                        onclick= "return confirm('确定要删除？');">
+                        <i class="fa fa-trash" aria-hidden="true"></i> 删除
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="panel-body">
                 <div class="col-sm-3 title-list">
-{#                    目录放在这里#}
+                    {#目录放在这里#}
                     <ul id="catalog">
 
 
@@ -67,6 +79,7 @@
                             <a href="{% url 'wiki_add' project_id=request.tracer.project.id %}">
                                 <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建文章
                             </a>
+
                         </div>
                     {% endif %}
 

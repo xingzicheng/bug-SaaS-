@@ -47,3 +47,35 @@ def wiki_catalog(request, project_id):
         'depth', 'id')
     # data = models.Wiki.objects.filter(project=request.tracer.project).values("id", 'title', 'parent_id')
     return JsonResponse({'status': True, 'data': list(data)})
+
+
+def wiki_delete(request, project_id, wiki_id):
+    """删除文章"""
+    #加入project_id以免删除别人的文章
+    # 级联删除，删除父文章，由于子文章外键自关联父文章，所以子文章也将删除
+    models.Wiki.objects.filter(project_id=project_id, id=wiki_id).delete()
+    url = reverse('wiki', kwargs={'project_id':project_id})
+    return redirect(url)
+
+def wiki_edit(request, project_id, wiki_id):
+    """编辑文章"""
+    wiki_object = models.Wiki.objects.filter(project_id=project_id, id=wiki_id).first()
+    if not wiki_object:
+        url = reverse('wiki', kwargs={'project_id': project_id})
+        return redirect(url)
+    if request.method == "GET":
+        form = WikiModelForm(request, instance=wiki_object)
+        return render(request, 'wiki_add.html',{'form':form})
+    # instance 是初始化的值，data是更新的数据，因为有数据在instance中，所以不需要和新建一样传一个
+    # form.instance.project = request.tracer.project
+    form = WikiModelForm(request,data=request.POST, instance=wiki_object)
+    if form.is_valid():
+        if form.instance.parent:
+            form.instance.depth = form.instance.parent.depth + 1
+        else:
+            form.instance.depth = 1
+        form.save()
+        url = reverse('wiki', kwargs={'project_id': project_id})
+        preview_url = "{0}?wiki_id={1}".format(url, wiki_id)
+        return redirect(preview_url)
+

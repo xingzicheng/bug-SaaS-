@@ -20,13 +20,20 @@
             border-right: 1px solid #dddddd;
             min-height: 500px;
         }
+        .title-list ul {
+            padding-left: 10px;
+        }
+
+        .title-list ul a {
+            display: block;
+            padding: 5px 0;
+        }
 
         .content {
             border-left: 1px solid #dddddd;
             min-height: 600px;
             margin-left: -1px;
         }
-
     </style>
 {% endblock %}
 
@@ -47,7 +54,11 @@
             </div>
             <div class="panel-body">
                 <div class="col-sm-3 title-list">
-                    <div>目录</div>
+                     {#目录放在这里#}
+                    <ul id="catalog">
+
+
+                    </ul>
 
                 </div>
                 <div class="col-sm-9 content">
@@ -64,9 +75,50 @@
                         <button type="submit" class="btn btn-primary">提 交</button>
                     </form>
                 </div>
-                <div></div>
+
             </div>
         </div>
 
     </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+
+        // http://127.0.0.1:8002/manage/2/wiki/detail/
+        var WIKI_DETAIL_URL = "{% url 'wiki' project_id=request.tracer.project.id %}";
+
+        $(function () {
+
+            initCatalog();
+
+        });
+
+        function initCatalog() {
+            $.ajax({
+                url: "{% url 'wiki_catalog' project_id=request.tracer.project.id %}",
+                type: "GET",
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        {#index用于循环索引，item用于循环对象#}
+                        $.each(res.data, function (index, item) {
+                            var href = WIKI_DETAIL_URL + "?wiki_id=" + item.id;
+                            {#创建一个li标签并且在里面无论有没有子目录都创建一个ul标签放着，方便添加目录#}
+                            var li = $("<li>").attr('id', "id_" + item.id).append( $('<a>').text(item.title).attr('href',href)  ).append($('<ul>'));
+
+                            if (!item.parent_id) {
+                                // 添加到catalog中
+                                $('#catalog').append(li);
+                            } else {
+                                $("#id_" + item.parent_id).children('ul').append(li);
+                            }
+                        })
+                    } else {
+                        alert("初始化目录失败");
+                    }
+                }
+            })
+        }
+    </script>
 {% endblock %}

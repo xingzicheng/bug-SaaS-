@@ -162,7 +162,7 @@ class LoginSMSForm(BootStrapForm, forms.Form):
         exists = models.UserInfo.objects.filter(mobile_phone=mobile_phone).exists()
         # user_object = models.UserInfo.objects.filter(mobile_phone=mobile_phone).first()
         if not exists:
-            raise ValidationError('手机号不存在')
+            raise ValidationError('手机号未注册')
 
         return mobile_phone
 
