@@ -1,6 +1,7 @@
 {% extends 'layout/manage.html' %}
-
+{% load static %}
 {% block css %}
+    <link rel="stylesheet" href="{% static 'plugin/editor-md/css/editormd.min.css' %}">
     <style>
         .panel-default {
             margin-top: 10px;
@@ -65,11 +66,21 @@
                     <form method="post">
                         {% csrf_token %}
                         {% for field in form %}
-                            <div class="form-group">
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                <span class="error-msg">{{ field.errors.0 }}</span>
-                            </div>
+                            {% if field.name == "content" %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    <div id="editor">
+                                        {{ field }}
+                                    </div>
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% else %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    <span class="error-msg">{{ field.errors.0 }}</span>
+                                </div>
+                            {% endif %}
                         {% endfor %}
 
                         <button type="submit" class="btn btn-primary">提 交</button>
@@ -83,16 +94,24 @@
 {% endblock %}
 
 {% block js %}
+    <script src="{% static 'plugin/editor-md/editormd.min.js' %}"></script>
     <script>
 
         // http://127.0.0.1:8002/manage/2/wiki/detail/
         var WIKI_DETAIL_URL = "{% url 'wiki' project_id=request.tracer.project.id %}";
 
         $(function () {
-
             initCatalog();
+            initEditorMD();
 
         });
+        {#初始化Markdown编辑器#}
+        function initEditorMD() {
+            editormd('editor',{
+                height: 500,
+                path: "{% static 'plugin/editor-md/lib/' %}"
+            })
+        }
 
         function initCatalog() {
             $.ajax({

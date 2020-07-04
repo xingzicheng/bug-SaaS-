@@ -48,6 +48,7 @@
                         <i class="fa fa-plus-circle" aria-hidden="true"></i> 新建
                     </a>
                     {% if wiki_object %}
+                        {# 如果wiki_object存在，说明我进入了wiki预览页面，这时能看到编辑和删除按钮，否则则在wiki主页 #}
                          <a type="button" class="btn btn-primary btn-xs"
                            href="{% url 'wiki_edit' project_id=request.tracer.project.id wiki_id=wiki_object.id %}">
                         <i class="fa fa-edit" aria-hidden="true"></i> 编辑

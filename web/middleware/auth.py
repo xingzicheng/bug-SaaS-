@@ -6,7 +6,7 @@ from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 from web import models
 
-class Tracer(object):
+class Tracer(object): # 为什么继承object类可以request.tracer = Tracer()，在request中存储数据？
 
     def __init__(self):
         self.user = None

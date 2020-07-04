@@ -8,9 +8,13 @@ from web import models
 
 def wiki(request, project_id):
     """ wiki的首页 """
-    wiki_id = request.GET.get('wiki_id')
+    wiki_id = request.GET.get('wiki_id')# 问号传参这样获取
     # 如果wiki_id合法才返回预览页面
     if not wiki_id or not wiki_id.isdecimal():
+        # 没有传wiki_id时不返回任何数据，前端判断一下{% if wiki_object %}是否有值，
+        # 注意一下：这在普通py程序不允许的，因为这个变量没定义，比如说：
+        # if x：
+        #    print（‘1’）  这个程序会报错x没有定义，但是render里没传值应该是当空值处理
         return render(request, 'wiki.html')
 
     wiki_object = models.Wiki.objects.filter(id=wiki_id, project_id=project_id).first()
@@ -49,7 +53,7 @@ def wiki_catalog(request, project_id):
     return JsonResponse({'status': True, 'data': list(data)})
 
 
-def wiki_delete(request, project_id, wiki_id):
+def wiki_delete(request, project_id, wiki_id):# URL传参这样获取
     """删除文章"""
     #加入project_id以免删除别人的文章
     # 级联删除，删除父文章，由于子文章外键自关联父文章，所以子文章也将删除
