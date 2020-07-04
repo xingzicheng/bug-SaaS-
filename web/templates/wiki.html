@@ -1,6 +1,7 @@
 {% extends 'layout/manage.html' %}
-
+{% load static %}
 {% block css %}
+    <link rel="stylesheet" href="{% static 'plugin/editor-md/css/editormd.preview.min.css' %}">
     <style>
         .panel-default{
             margin-top: 10px;
@@ -71,9 +72,10 @@
                 </div>
                 <div class="col-sm-9 content">
                     {% if wiki_object %}
+                        <div id="priviewMarkdown">
 
-                        {{ wiki_object.content }}
-
+                        <textarea>{{ wiki_object.content }}</textarea>
+                        </div>
                     {% else %}
                         <div style="text-align: center;margin-top: 50px;">
                             <h4> 《{{ request.tracer.project.name }}》wiki文档库 </h4>
@@ -93,6 +95,14 @@
 {% endblock %}
 
 {% block js %}
+    <script src="{% static 'plugin/editor-md/editormd.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/marked.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/prettify.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/raphael.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/underscore.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/sequence-diagram.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/flowchart.min.js' %}"></script>
+    <script src="{% static 'plugin/editor-md/lib/jquery.flowchart.min.js' %}"></script>
     <script>
 
         // http://127.0.0.1:8002/manage/2/wiki/detail/
@@ -101,8 +111,14 @@
         $(function () {
 
             initCatalog();
+            initPriviewMarkdown();
 
         });
+        function initPriviewMarkdown() {
+            editormd.markdownToHTML('priviewMarkdown',{
+                htmlDebode: "style,script,iframe"
+            })
+        }
 
         function initCatalog() {
             $.ajax({
