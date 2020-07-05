@@ -138,6 +138,10 @@ TENCENT_SMS_APP_KEY = "6666666666666666666666"
 # 腾讯云短信签名内容
 TENCENT_SMS_SIGN = "优雅如python"
 
+# 腾讯对象存储
+TENCENT_COS_ID = "COS的secret_id"
+TENCENT_COS_KEY = "COS的secret_key"
+
 # DATABASES = {
 #     'default': {
 #         #'ENGINE': 'django.db.backends.sqlite3',

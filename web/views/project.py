@@ -2,8 +2,10 @@
 from django.shortcuts import render, HttpResponse, redirect
 from django.http import JsonResponse
 
+import time
 from web.forms.project import ProjectModelForm
 from web import models
+from utils.tencent.cos import create_bucket
 
 
 def project_list(request):
@@ -41,7 +43,17 @@ def project_list(request):
     # POST，对话框的ajax添加项目。
     form = ProjectModelForm(request, data=request.POST)
     if form.is_valid():
+        #name = form.cleaned_data['name']
+        # 1. 为项目创建一个桶
+        bucket = "{}-{}-1302500805".format(request.tracer.user.mobile_phone, str(int(time.time())))
+        region = 'ap-nanjing'
+        create_bucket(bucket, region)
+
+
+
         # 验证通过：项目名、颜色、描述 + creator谁创建的项目？
+        form.instance.bucket = bucket
+        form.instance.region = region
         form.instance.creator = request.tracer.user
         # 创建项目
         form.save()
