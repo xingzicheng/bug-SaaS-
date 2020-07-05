@@ -4,7 +4,9 @@ from web.forms.wiki import WikiModelForm
 
 from django.http import JsonResponse
 from web import models
-
+from django.views.decorators.csrf import csrf_exempt
+from utils.encrypt import uid
+from utils.tencent.cos import upload_file
 
 def wiki(request, project_id):
     """ wiki的首页 """
@@ -83,3 +85,36 @@ def wiki_edit(request, project_id, wiki_id):
         preview_url = "{0}?wiki_id={1}".format(url, wiki_id)
         return redirect(preview_url)
 
+# 忽略csrf
+@csrf_exempt
+def wiki_upload(request, project_id):
+    """ markdown插件上传图片 """
+
+    # markdown上传文件到我后台，后台上传至对象存储，返回成功信息和图片URL给Markdown
+    # markdown给我们展示出来
+
+    result = { # g给markdown返回的信息，success=0表示失败
+        'success': 0,
+        'message': None,
+        'url': None
+    }
+    # 上传的文件统一的key为editormd-image-file，valuel为文件对象
+    image_object = request.FILES.get('editormd-image-file')
+    if not image_object:
+        result['message'] = "文件不存在"
+        return JsonResponse(result)
+
+    # 给图片设置一个不重复的名字
+    ext = image_object.name.rsplit('.')[-1] # 获取图片后缀
+    key = "{}.{}".format(uid(request.tracer.user.mobile_phone), ext)
+    # 上传至对象存储后返回url：image_url
+    image_url = upload_file(
+        request.tracer.project.bucket,
+        request.tracer.project.region,
+        image_object,
+        key
+    )
+    result['success'] = 1
+    result['url'] = image_url
+    # 给markdown返回
+    return JsonResponse(result)

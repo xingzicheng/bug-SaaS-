@@ -102,6 +102,7 @@
 
         // http://127.0.0.1:8002/manage/2/wiki/detail/
         var WIKI_DETAIL_URL = "{% url 'wiki' project_id=request.tracer.project.id %}";
+        var WIKI_UPLOAD_URL = "{% url 'wiki_upload' project_id=request.tracer.project.id %}";
 
         $(function () {
             initCatalog();
@@ -112,7 +113,11 @@
         function initEditorMD() {
             editormd('editor',{
                 height: 500,
-                path: "{% static 'plugin/editor-md/lib/' %}"
+                path: "{% static 'plugin/editor-md/lib/' %}",
+                {#允许上传图片，允许的格式，上传到---->后台的url#}
+                imageUpload:true,
+                imageFormats:["jpg",'jpeg','png','gif'],
+                imageUploadURL:WIKI_UPLOAD_URL
             })
         }
 
