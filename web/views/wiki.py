@@ -17,6 +17,7 @@ def wiki(request, project_id):
         # 注意一下：这在普通py程序不允许的，因为这个变量没定义，比如说：
         # if x：
         #    print（‘1’）  这个程序会报错x没有定义，但是render里没传值应该是当空值处理
+        # 更严谨一点就是通过判断url是否传参 ？wiki_id 来走不同分路，如果没参数，可以wiki_object=None
         return render(request, 'wiki.html')
 
     wiki_object = models.Wiki.objects.filter(id=wiki_id, project_id=project_id).first()
