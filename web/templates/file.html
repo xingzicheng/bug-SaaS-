@@ -1,5 +1,6 @@
 {% extends 'layout/manage.html' %}
 
+{% load static %}
 {% block css %}
     <style>
         .panel-default .panel-heading {
@@ -14,6 +15,30 @@
 
         .panel-default > .panel-heading span {
             padding: 0 5px;
+        }
+        /*上传文件的按钮样式*/
+        .panel-default > .panel-heading .function .upload {
+            overflow: hidden;/*元素的内容若超出了给定的宽度和高度属性，那么超出的部分将会被隐藏，不占位*/
+        }
+
+        .panel-default > .panel-heading .function .upload input {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 76px;
+            left: -2px;
+            overflow: hidden;
+        }
+        .upload-progress {
+            position: fixed;
+            right: 2px;
+            bottom: 2px;
+            width: 400px;
+        }
+
+        .upload-progress .progress-error {
+            color: red;
         }
     </style>
 {% endblock %}
@@ -36,7 +61,12 @@
                         </a>
                     {% endfor %}
                 </div>
-                <div>
+                    <!--覆盖传统上传文件按钮来美化按钮-->
+                    <div class="function">
+                        <div class="btn btn-primary btn-xs upload" style="position: relative">
+                            <div><i class="fa fa-upload" aria-hidden="true"></i> 上传文件</div>
+                            <input type="file" multiple name="uploadFile" id="uploadFile">
+                        </div>
                     <a class="btn btn-success btn-xs"
                        data-toggle="modal"
                        data-target="#addModal"
@@ -56,7 +86,7 @@
                     <th>操作</th>
                 </tr>
                 </thead>
-                <tbody>
+                <tbody id="rowList">
                 {% for item in file_object_list %}
                     <tr>
                         <td>
@@ -89,9 +119,19 @@
                                    data-whatever="修改文件夹">
                                     <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
                                 </a>
+                            {% else %}
+                                <a class="btn btn-default btn-xs"
+                                   href="{% url 'file_download' project_id=request.tracer.project.id file_id=item.id %}">
+                                    <i class="fa fa-cloud-download" aria-hidden="true"></i>
+                                </a>
                             {% endif %}
 
-                            <a>删除</a>
+                             <a class="btn btn-danger btn-xs"
+                               data-toggle="modal"
+                               data-fid="{{ item.id }}"
+                               data-target="#alertModal">
+                                <i class="fa fa-trash" aria-hidden="true"></i>
+                            </a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -130,17 +170,212 @@
             </div>
         </div>
     </div>
+    {# 此处用到bootstrap将模态框和警告框结合   #}
+    <div class="modal fade" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="alert alert-danger alert-dismissible fade in" role="alert">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">×</span></button>
+                <h4>是否要确定删除？</h4>
+                <p style="padding-top: 20px;padding-bottom: 20px;">
+                    文件夹中包含的所有的文件都会被删除。
+                </p>
+                <p style="text-align: right;">
+                    <a class="btn btn-default btn-sm" data-dismiss="modal" aria-label="Close">取 消</a>
+                    <button id="btnDelete" type="button" class="btn btn-danger btn-sm">确 定</button>
+                </p>
+            </div>
+        </div>
+    </div>
+    <!--隐藏的上传进度的面板-->
+    <div id="uploadProgress" class="upload-progress hide">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <i class="fa fa-cloud-upload" aria-hidden="true"></i> 上传进度
+            </div>
+    <!--此处动态添加上传进度条-->
+            <table class="table">
+                <tbody id="progressList">
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!--这个标签时隐藏的，也不会将它显示出来，这个的作用是js找到table里面的tr，
+    然后将进度条数据添加进去，克隆一份tr，添加到上面进度条显示面板那里-->
+    <div class="hide">
+        <table id="progressTemplate">
+            <tr>
+                <td>
+                    <div class="name"></div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="100" style="width: 0%;">
+                            0%
+                        </div>
+                    </div>
+                    <div class="progress-error"></div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <!--这个标签也是隐藏的，用于js克隆table里面的tr标签添加到文件列表的面板，
+    用于动态显示上传的文件，上传一个就显示一个，页面不用刷新-->
+    <div class="hide">
+        <table id="rowTpl">
+            <tr>
+                <td>
+                    <i class="fa fa-file" aria-hidden="true"></i>
+                    <span class="name"></span>
+                </td>
+                <td class="file_size"></td>
+                <td class="username"></td>
+                <td class="datetime"></td>
+                <td>
+
+                    <a class="btn btn-default btn-xs download">
+                        <i class="fa fa-cloud-download" aria-hidden="true"></i>
+                    </a>
+
+                    <a class="btn btn-danger btn-xs delete" data-toggle="modal" data-target="#alertModal">
+                        <i class="fa fa-trash" aria-hidden="true"></i>
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </div>
 {% endblock %}
 
 {% block js %}
+    <script src="{% static 'js/cos-js-sdk-v5.min.js' %}"></script>
     <script>
 
         var FOLDER_URL = "{% url 'file' project_id=request.tracer.project.id %}";
+        var FILE_DELETE_URL = "{% url 'file_delete' project_id=request.tracer.project.id %}";
+        //临时凭证获取地址
+        var COS_CREDENTIAL = "{% url 'cos_credential' project_id=request.tracer.project.id %}";
+        var FILE_POST = "{% url 'file_post' project_id=request.tracer.project.id %}";
+        var CURRENT_FOLDER_ID = "{{ folder_object.id }}"; // 当前上传文件的父目录id
 
         $(function () {
             initAddModal();
             bindModelSubmit();
+            bindDeleteSubmit();
+            bindUploadFile();
         });
+        function bindUploadFile() {
+            // change事件
+            $('#uploadFile').change(function () {
+                //上传文件之前清空进度条
+                $('#progressList').empty();
+
+                var fileList = $(this)[0].files;
+                // 获取本次要上传的每个文件 名称&大小
+                var checkFileList = [];
+                $.each(fileList, function (index, fileObject) {
+                    checkFileList.push({'name': fileObject.name, 'size': fileObject.size})
+                });
+
+                // 把这些数据发送到django后台：Django后台进行容量的校验，如果没有问题则返回临时凭证；否则返回错误信息；
+                // 腾讯对象存储提供了一种机制：若凭证超时则向后台获取，否则就不获取
+                var cos_credential = new COS({
+                    getAuthorization: function (options, callback) {
+                        // $.post等价于ajax的post方法（url，data，回调函数）
+                        // 参见js的sdk文档       //将数据传到后端，request.body中取
+                        $.post(COS_CREDENTIAL, JSON.stringify(checkFileList), function (res) {
+                            if (res.status) {
+                                var credentials = res.data && res.data.credentials;
+                                callback({
+                                    TmpSecretId: credentials.tmpSecretId,
+                                    TmpSecretKey: credentials.tmpSecretKey,
+                                    XCosSecurityToken: credentials.sessionToken,
+                                    StartTime: res.data.startTime,
+                                    ExpiredTime: res.data.expiredTime
+                                });
+
+                                $('#uploadProgress').removeClass('hide');
+                            } else {
+                                alert(res.error);
+                            }
+                        });
+                    }
+                });
+
+                // 上传文件（上传之前先获取临时凭证）
+                $.each(fileList, function (index, fileObject) {
+                    var fileName = fileObject.name;
+                    var fileSize = fileObject.size;
+                    // 对象在存储桶中的唯一标识，构造一个key给后台存入数据库是为了允许上传同名文件，删除时也是通过key而不是文件名
+                    var key = (new Date()).getTime() + "_" + fileName;
+
+                    var tr = $('#progressTemplate').find('tr').clone();//克隆标签，显示进度条
+                    tr.find('.name').text(fileName);
+                    $('#progressList').append(tr);
+
+                    // 上传文件（异步）
+                    cos_credential.putObject({
+                        Bucket: '{{ request.tracer.project.bucket }}', /* 必须 */
+                        Region: '{{ request.tracer.project.region }}', /* 存储桶所在地域，必须字段 */
+                        Key: key, /* 必须 ，对象在存储桶中的唯一标识*/
+                        Body: fileObject, // 上传文件对象
+                        onProgress: function (progressData) { // 上传进度的回调方法
+                            var percent = progressData.percent * 100 + '%';
+                            tr.find('.progress-bar').text(percent);
+                            tr.find('.progress-bar').css('width', percent);
+                        }
+                    }, function (err, data) { //cos_credential.putObject的回调方法
+                        if (data && data.statusCode === 200) {
+                            // 上传成功，将本次上传的文件提交到后台并写入数据
+                            // 当前文件上传成功
+                            $.post(FILE_POST, {
+                                name: fileName,
+                                key: key,
+                                file_size: fileSize,
+                                parent: CURRENT_FOLDER_ID,
+                                etag: data.ETag,// 对象存储根据文件内容返回的值，用于检验上传合法
+                                file_path: data.Location //文件在对象存储的路径
+                            }, function (res) { //$.post的回调函数
+                                // 在数据库中写入成功，将已添加的数据在页面上动态展示。
+                                var newTr = $('#rowTpl').find('tr').clone();
+                                newTr.find('.name').text(res.data.name);
+                                newTr.find('.file_size').text(res.data.file_size);
+                                newTr.find('.username').text(res.data.username);
+                                newTr.find('.datetime').text(res.data.datetime);
+                                newTr.find('.delete').attr('data-fid', res.data.id);
+                                newTr.find('.download').attr('href', res.data.download_url);//下载按钮url
+                                $('#rowList').append(newTr);
+
+                                // 自己的进度删除
+                                tr.remove();
+                            })
+
+                        } else {
+                            tr.find('.progress-error').text('上传失败');
+                        }
+                    });
+
+
+                })
+            });
+        }
+        {#ajax将要删除的文件id发到后台#}
+        function bindDeleteSubmit() {
+            $('#btnDelete').click(function () {
+                // 获取要删除那行ID
+                $.ajax({
+                    url: FILE_DELETE_URL,
+                    type: "GET",
+                    data: {fid: $(this).attr('fid')},
+                    success: function (res) {
+                        if(res.status){
+                            location.href = location.href;
+                        }
+                    }
+                })
+            })
+        }
         {#此处相当于自定义了bootstrap的模态对话框, 知识点： Bootstrap 中data-[*] 属性 #}
         {# 编辑文件夹和添加文件夹放在了一起，降低代码可读性 #}
         function initAddModal() {
@@ -164,7 +399,15 @@
                     $('#form')[0].reset(); //等价于上一句，让标签回到初始状态，所以
                 }                          //编辑时加上的fid的value值重新回到空，不影响后端区分编辑和创建
 
+            });
+            {#将文件夹的id绑定到删除弹出的模态框的确认按钮#}
+            $('#alertModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget); // Button that triggered the modal
+                var fid = button.data('fid'); // Extract info from data-* attributes
+                $('#btnDelete').attr('fid', fid);
+
             })
+
         }
 
         function bindModelSubmit() {
