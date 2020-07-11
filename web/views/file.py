@@ -49,7 +49,7 @@ def file(request, project_id):
         return render(request, 'file.html', context)
 
     # POST 添加文件夹 & 文件夹的修改
-    fid = request.POST.get('fid', '')
+    fid = request.POST.get('fid', '') # 取不到值就为空
     edit_object = None
     if fid.isdecimal():
         edit_object = models.FileRepository.objects.filter(id=int(fid), file_type=2,
