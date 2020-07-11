@@ -6,6 +6,8 @@ import time
 from web.forms.project import ProjectModelForm
 from web import models
 from utils.tencent.cos import create_bucket
+from xpinyin import Pinyin
+from qcloud_cos.cos_exception import CosClientError
 
 
 def project_list(request):
@@ -43,13 +45,20 @@ def project_list(request):
     # POST，对话框的ajax添加项目。
     form = ProjectModelForm(request, data=request.POST)
     if form.is_valid():
-        #name = form.cleaned_data['name']
+
+        name = form.cleaned_data['name']
+        p = Pinyin()
+        name_pinyin = p.get_pinyin(name)
         # 1. 为项目创建一个桶
-        bucket = "{}-{}-1302500805".format(request.tracer.user.mobile_phone, str(int(time.time())))
+        bucket = "{}-{}-{}-1302500805".format(name_pinyin,
+                                              request.tracer.user.mobile_phone, str(int(time.time())))
         region = 'ap-nanjing'
-        create_bucket(bucket, region)
-
-
+        try:
+            create_bucket(bucket, region)
+        except CosClientError as e:
+            # form.errors是一个对象：{ "name" : [ "字段不能为空",  ] },所以给它构造成这样就可以模拟raise ValidationError
+            form.errors['name'] = ["项目名只能是数字字母和“-”"]
+            return JsonResponse({'status': False, 'error': form.errors})
 
         # 验证通过：项目名、颜色、描述 + creator谁创建的项目？
         form.instance.bucket = bucket
@@ -58,6 +67,7 @@ def project_list(request):
         # 创建项目
         form.save()
         return JsonResponse({'status': True})
+    # form.errors传给前端是对象，但输出的时候是<ul>标签字符串，因为内部的方法将它转化了
     return JsonResponse({'status': False, 'error': form.errors})
 
 

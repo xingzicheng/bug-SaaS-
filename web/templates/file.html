@@ -378,7 +378,7 @@
         }
         {#此处相当于自定义了bootstrap的模态对话框, 知识点： Bootstrap 中data-[*] 属性 #}
         {# 编辑文件夹和添加文件夹放在了一起，降低代码可读性 #}
-        function initAddModal() {
+        function initAddModal() { <!--show.bs.modal是模态对话框弹出时的回调函数-->
             $('#addModal').on('show.bs.modal', function (event) {
                 var button = $(event.relatedTarget); // Button that triggered the modal
                 var recipient = button.data('whatever'); // Extract info from data-* attributes
