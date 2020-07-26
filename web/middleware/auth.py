@@ -7,6 +7,8 @@ from django.conf import settings
 from web import models
 
 class Tracer(object): # 为什么继承object类可以request.tracer = Tracer()，在request中存储数据？
+# 把Tracer的对象寄存在request对象的成员变量tracer中，跟着它到处传递，以后取值很方便。
+# 对象可以动态添加属性，此属性这个对象才有。类也能动态添加
 
     def __init__(self):
         self.user = None

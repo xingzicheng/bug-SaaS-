@@ -13,15 +13,34 @@
 #from web import models
 # 往数据库添加数据：链接数据库、操作、关闭链接
 #models.UserInfo.objects.create(username='陈硕', email='chengshuo@live.com', mobile_phone='13838383838', password='123123')
-from xpinyin import Pinyin
+# from xpinyin import Pinyin
 
 
-# 实例拼音转换对象
-p = Pinyin()
-# 进行拼音转换
-x = "文件夹s25"
+# # 实例拼音转换对象
+# p = Pinyin()
+# # 进行拼音转换
+# x = "文件夹S25"
 
-ret2 = p.get_pinyin(x)
+# r = p.get_pinyin(x)
+# print(r)
+# print(r.lower())
 
-y = ret2.replace('-','_')
-print(y)
+# request.tracer的例子
+class a:
+    def __init__(self, *args, **kwargs):
+        self.tra = 3
+        self.x = b()
+
+class b:
+    def __init__(self, *args, **kwargs):
+        self.name = 2
+
+request = a()
+print(request.tra)
+request.tr = b()
+print(request.tr)
+print(request.tr.name)
+print(request.x.name)
+request.y = 4
+print(request.y)
+print(request)

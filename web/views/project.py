@@ -49,6 +49,9 @@ def project_list(request):
         name = form.cleaned_data['name']
         p = Pinyin()
         name_pinyin = p.get_pinyin(name)
+        # 发现一个bug，如果名字中含有大写字母，上传文件会失败，wiki上传图片能成功（文件用的js临时凭证上传，wiki用的python上传
+        # 将大写字母转换成小写
+        name_pinyin = name_pinyin.lower()
         # 1. 为项目创建一个桶
         bucket = "{}-{}-{}-1302500805".format(name_pinyin,
                                               request.tracer.user.mobile_phone, str(int(time.time())))

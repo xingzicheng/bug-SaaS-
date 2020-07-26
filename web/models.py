@@ -14,6 +14,8 @@ class UserInfo(models.Model):
 
     #在UserInfo中加入此字段可以减少数据库查询次数
     # price_policy = models.ForeignKey(verbose_name='价格策略', to='PricePolicy', null=True, blank=True)
+    def __str__(self):
+        return self.username
 
 class PricePolicy(models.Model):
     """ 价格策略 """
@@ -106,6 +108,7 @@ class Wiki(models.Model):
     # 子关联
     parent = models.ForeignKey(verbose_name='父文章', to="Wiki", null=True, blank=True, related_name='children')
 
+    # 自动生成的form表单会让外键选择变成object，用这个方法能使选择变成title
     def __str__(self):
         return self.title
 
