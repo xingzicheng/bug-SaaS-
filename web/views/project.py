@@ -67,8 +67,16 @@ def project_list(request):
         form.instance.bucket = bucket
         form.instance.region = region
         form.instance.creator = request.tracer.user
-        # 创建项目
-        form.save()
+        # 2.创建项目
+        instance = form.save() # 返回值是这个对象
+
+        # 3.项目初始化问题类型
+        issues_type_object_list = []
+        for item in models.IssuesType.PROJECT_INIT_LIST:
+            # 类实例代表一行数据
+            issues_type_object_list.append(models.IssuesType(project=instance, title=item))
+        models.IssuesType.objects.bulk_create(issues_type_object_list)
+
         return JsonResponse({'status': True})
     # form.errors传给前端是对象，但输出的时候是<ul>标签字符串，因为内部的方法将它转化了
     return JsonResponse({'status': False, 'error': form.errors})

@@ -41,7 +41,7 @@
             <ul class="nav navbar-nav">
                 {% all_project_list request %}
 
-                {% if request.tracer.project %}
+                {% if request.tracer.project %}<!--如果进入了项目，显示项目列表-->
                     {% manage_menu_list request %}
                 {% endif %}
             </ul>

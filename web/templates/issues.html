@@ -31,7 +31,9 @@
             padding: 1px 5px;
             border-radius: 5px;
         }
-
+        .editormd{
+            margin-bottom: 0;
+        }
         .pd-0 {
             padding: 0 !important;
         }
@@ -126,7 +128,9 @@
                                    class="col-md-2 control-label">{{ form.issues_type.label }}</label>
                             <div class="col-md-10">
                                 <div>
-                                    {{ form.issues_type }}
+                                    <div><!--为了让错误信息统一显示，js统一查找，某些地方套一个div-->
+                                        {{ form.issues_type }}
+                                    </div>
 
                                     <div class="error-msg"></div>
                                 </div>
@@ -138,7 +142,9 @@
                                    class="col-md-2 control-label">{{ form.subject.label }}</label>
                             <div class="col-md-10">
                                 <div>
-                                    {{ form.subject }}
+                                    <div>
+                                        {{ form.subject }}
+                                    </div>
 
                                     <div class="error-msg"></div>
                                 </div>
@@ -150,7 +156,9 @@
                                    class="col-md-2 control-label">{{ form.module.label }}</label>
                             <div class="col-md-10">
                                 <div>
-                                    {{ form.module }}
+                                    <div>
+                                        {{ form.module }}
+                                    </div>
 
                                     <div class="error-msg"></div>
                                 </div>
@@ -178,7 +186,9 @@
                                 <label for="{{ form.status.id_for_label }}"
                                        class="col-md-4 control-label">{{ form.status.label }}</label>
                                 <div class="col-md-8 clearfix">
-                                    {{ form.status }}
+                                    <div>
+                                        {{ form.status }}
+                                    </div>
                                     <div class="error-msg"></div>
 
                                 </div>
@@ -251,7 +261,9 @@
                             <div class="col-md-6 pd-0">
                                 <label for="inputPassword3" class="col-md-4 control-label">模式</label>
                                 <div class="col-md-8">
-                                    {{ form.mode }}
+                                    <div>
+                                        {{ form.mode }}
+                                    </div>
                                     <div class="error-msg"></div>
                                 </div>
                             </div>
@@ -271,7 +283,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">取 消</button>
-                    <button type="button" class="btn btn-primary">添 加</button>
+                    <button type="button" class="btn btn-primary"  id="btnAddSubmit">添 加</button>
                 </div>
             </div>
         </div>
@@ -286,10 +298,12 @@
     <script src="{% static 'plugin/bootstrap-select/js/i18n/defaults-zh_CN.min.js' %}"></script>
     <script>
         var WIKI_UPLOAD_URL = "{% url 'wiki_upload' project_id=request.tracer.project.id %}";
+        var POST_ISSUES = "{% url 'issues' project_id=request.tracer.project.id %}";
 
         $(function () {
             bindBootStrapShownEvent();
             initDatePicker();
+            bindAddSubmit();
         });
 
         /*
@@ -325,5 +339,27 @@
                 imageUploadURL: WIKI_UPLOAD_URL
             })
         }
+        //添加问题
+         function bindAddSubmit() {
+                $('#btnAddSubmit').click(function () {
+                    $("#addForm").find('.error-msg').empty();
+                    $.ajax({
+                        url: POST_ISSUES,
+                        type: "POST",
+                        data: $('#addForm').serialize(),
+                        dataType: "JSON",
+                        success: function (res) {
+                            if (res.status) {
+                                location.href = location.href;
+                            } else {
+                                // 错误信息
+                                $.each(res.error, function (k, v) {
+                                    $('#id_' + k).parent().next('.error-msg').text(v[0]);
+                                })
+                            }
+                        }
+                    })
+                });
+            }
     </script>
 {% endblock %}
