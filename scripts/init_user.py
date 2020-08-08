@@ -45,6 +45,17 @@
 # print(request.y)
 # print(request)
 
-ins = None
-if ins:
-    print(1) 
+def xi(**kwargs):
+    print(kwargs)
+
+x = {"1":1, "2":2, "3":3}
+xi(**x)
+xi(x1=1, x2=2, x3=3)
+
+def ch(*args):
+    print(args)
+
+y = (1, 2, 3)
+ch(y)
+ch(*y)
+ch(1,2,3)

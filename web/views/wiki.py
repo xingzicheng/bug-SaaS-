@@ -67,11 +67,12 @@ def wiki_delete(request, project_id, wiki_id):# URL传参这样获取
 def wiki_edit(request, project_id, wiki_id):
     """编辑文章"""
     wiki_object = models.Wiki.objects.filter(project_id=project_id, id=wiki_id).first()
+    # 非法访问别人的wiki
     if not wiki_object:
         url = reverse('wiki', kwargs={'project_id': project_id})
         return redirect(url)
     if request.method == "GET":
-        form = WikiModelForm(request, instance=wiki_object)
+        form = WikiModelForm(request, wiki_id, instance=wiki_object)
         return render(request, 'wiki_add.html',{'form':form})
     # instance 是初始化的值，data是更新的数据，因为有数据在instance中，所以不需要和新建一样传一个
     # form.instance.project = request.tracer.project

@@ -42,7 +42,7 @@ def issues(request, project_id):
 def issues_detail(request, project_id, issues_id):
     """ 编辑问题 """
     issues_object = models.Issues.objects.filter(id=issues_id, project_id=project_id).first()
-    form = IssuesModelForm(request, instance=issues_object)
+    form = IssuesModelForm(request, issues_id, instance=issues_object)
     return render(request, 'issues_detail.html', {'form': form, "issues_object": issues_object})
 
 
@@ -131,7 +131,7 @@ def issues_change(request, project_id, issues_id):
     #print(post_dict)
     # 拿到某个字段的对象，可以点出字段的参数，比如field_object.null判断是否允许为空
     field_object = models.Issues._meta.get_field(name)
-    # 1. 数据库字段更新，以防黑客恶意篡改，分情况讨论
+    # 1. 数据库字段更新，以防黑客恶意篡改，不同字段有不同更新方式，分情况讨论
     # 1.1 文本
     if name in ["subject", 'desc', 'start_date', 'end_date']: # 文本的字段
         if not value: # value为空
@@ -214,8 +214,49 @@ def issues_change(request, project_id, issues_id):
 
         return JsonResponse({'status': True, 'data': create_reply_record(change_record)})
     # 1.3 choices字段
+    if name in ['priority', 'status', 'mode']:
+        selected_text = None
+        for key, text in field_object.choices:
+            if str(key) == value:
+                selected_text = text
+        if not selected_text:
+            return JsonResponse({'status': False, 'error': "您选择的值不存在"})
+
+        setattr(issues_object, name, value)
+        issues_object.save()
+        change_record = "{}更新为{}".format(field_object.verbose_name, selected_text)
+        return JsonResponse({'status': True, 'data': create_reply_record(change_record)})
     # 1.4 M2M字段
+    if name == "attention":
+        # {"name":"attention","value":[1,2,3]}
+        # value不是列表类型
+        if not isinstance(value, list):
+            return JsonResponse({'status': False, 'error': "数据格式错误"})
+        # 指派为空
+        if not value:
+            issues_object.attention.set(value) #多对多m2m的更新方式
+            issues_object.save()
+            change_record = "{}更新为空".format(field_object.verbose_name)
+        else:
+            # values=["1",2,3,4]  ->   id是否是项目成员（参与者、创建者）
+            # 获取当前项目的所有成员
+            # 无论列表里是str或int统一转换成str
+            user_dict = {str(request.tracer.project.creator_id): request.tracer.project.creator.username}
+            project_user_list = models.ProjectUser.objects.filter(project_id=project_id)
+            for item in project_user_list:
+                user_dict[str(item.user_id)] = item.user.username
+            # 获取选择的用户名
+            username_list = []
+            for user_id in value:
+                username = user_dict.get(str(user_id))
+                if not username:
+                    return JsonResponse({'status': False, 'error': "用户不存在请重新设置"})
+                username_list.append(username)
 
-    # 2. 生成操作记录
+            issues_object.attention.set(value) #多对多m2m的更新方式
+            issues_object.save()
+            change_record = "{}更新为{}".format(field_object.verbose_name, ",".join(username_list))
 
-    return JsonResponse({})
+        return JsonResponse({'status': True, 'data': create_reply_record(change_record)})
+
+    return JsonResponse({'status': False, 'error': "滚"})

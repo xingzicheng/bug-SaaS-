@@ -16,7 +16,7 @@ class IssuesModelForm(BootStrapForm, forms.ModelForm):
             "parent": forms.Select(attrs={'class': "selectpicker", "data-live-search": "true"}),
         }
     
-    def __init__(self, request, *args, **kwargs):
+    def __init__(self, request, IssuesId=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # 数据初始化
@@ -49,6 +49,16 @@ class IssuesModelForm(BootStrapForm, forms.ModelForm):
             project=request.tracer.project
         ).values_list("id", "subject")
         parent_list.extend(parent_object_list)
+        # 解决bug：修改问题将自己作为父问题
+        # 若传来了IssuesId，则说明是修改问题，将自己移除出父问题，否则是None，说明是新建问题
+        if IssuesId:
+            me = models.Issues.objects.filter(
+            project=request.tracer.project,
+            id=IssuesId
+            ).values_list("id", "subject")
+            #print(me[0])
+            #print(parent_list)
+            parent_list.remove(me[0])
         self.fields['parent'].choices = parent_list
 
 class IssuesReplyModelForm(forms.ModelForm):

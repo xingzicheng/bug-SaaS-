@@ -72,6 +72,7 @@
                     {% for item in issues_object_list %}
                     <tr>
                         <td class="number">
+                            <!--高中低对应不同的颜色-->
                             <i class="fa fa-circle text-{{ item.priority }}"></i>
                             <a target="_blank"
                                 href="{% url 'issues_detail' project_id=request.tracer.project.id issues_id=item.id %}">{% string_just item.id %}</a>

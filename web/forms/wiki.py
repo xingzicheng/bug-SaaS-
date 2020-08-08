@@ -9,7 +9,7 @@ class WikiModelForm(BootStrapForm, forms.ModelForm):
         model = models.Wiki
         exclude = ['project', 'depth', ]
 
-    def __init__(self, request, *args, **kwargs):
+    def __init__(self, request, WikiId=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # 找到想要的字段把他绑定显示的数据重置
@@ -17,6 +17,13 @@ class WikiModelForm(BootStrapForm, forms.ModelForm):
         total_data_list = [("", "- - -"), ]
         data_list = models.Wiki.objects.filter(project=request.tracer.project).values_list('id', 'title')
         total_data_list.extend(data_list)
+        # 编辑文章时不允许选择自己作为父文章
+        if WikiId:
+            me = models.Wiki.objects.filter(
+                project=request.tracer.project,
+                id=WikiId
+                ).values_list('id', 'title')
+            total_data_list.remove(me[0])
         # 使用choices可以改变django自动生成form所展示的内容
         # 并且自动生成 value=id，选项为title
         self.fields['parent'].choices = total_data_list
