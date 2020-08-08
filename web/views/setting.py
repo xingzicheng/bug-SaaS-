@@ -23,7 +23,7 @@ def delete(request, project_id):
     #       - 删除桶中的所有文件（找到桶中的所有文件 + 删除文件 )
     #       - 删除桶中的所有碎片（找到桶中的所有碎片 + 删除碎片 )
     #       - 删除桶
-    # 2. 删除项目
+    # 2. 删除项目（级联删除了数据库wiki和文件问题等）
     #       - 项目删除
 
     delete_bucket(request.tracer.project.bucket, request.tracer.project.region)

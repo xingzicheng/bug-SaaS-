@@ -25,22 +25,26 @@
 # print(r)
 # print(r.lower())
 
-# request.tracer的例子
-class a:
-    def __init__(self, *args, **kwargs):
-        self.tra = 3
-        self.x = b()
+# # request.tracer的例子
+# class a:
+#     def __init__(self, *args, **kwargs):
+#         self.tra = 3
+#         self.x = b()
 
-class b:
-    def __init__(self, *args, **kwargs):
-        self.name = 2
+# class b:
+#     def __init__(self, *args, **kwargs):
+#         self.name = 2
 
-request = a()
-print(request.tra)
-request.tr = b()
-print(request.tr)
-print(request.tr.name)
-print(request.x.name)
-request.y = 4
-print(request.y)
-print(request)
+# request = a()
+# print(request.tra)
+# request.tr = b()
+# print(request.tr)
+# print(request.tr.name)
+# print(request.x.name)
+# request.y = 4
+# print(request.y)
+# print(request)
+
+ins = None
+if ins:
+    print(1) 

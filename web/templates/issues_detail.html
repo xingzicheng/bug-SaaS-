@@ -234,22 +234,24 @@
             <div class="panel-heading">
                 <i class="fa fa-search" aria-hidden="true"></i> 操作记录
             </div>
-            <div class="panel-body comment-area">
+            <div class="panel-body comment-area" >
 
-                <div class="comment-list">
-
+                <div class="comment-list" style="overflow-y:scroll;height: 500px;">
+                    <!--评论所在位置-->
 
                 </div>
 
-                <hr />
+                
                 <div class="comment-text" id="commentText">
 
                     <div class="form-group">
                         <textarea id="content" rows="6" class="form-control" placeholder="请输入要回复的内容"></textarea>
                         <span class="error-msg"></span>
+                        <!--前端小bug：若overflow样式在其父亲div，会无法显示错误信息-->
                     </div>
 
                     <input class="btn btn-primary" type="button" id="btnSubmit" value="提 交">
+                    <!--隐藏的，点击回复才显示-->
                     <div class="reply-user hide" id="replyUser">
                         回复 <span></span>
                         <i class="fa fa-times-circle" aria-hidden="true" style="color: #9d9d9d;"></i>
@@ -262,7 +264,7 @@
     </div>
 </div>
 
-
+<!--隐藏的模板，用于动态添加评论-->
 <div class="hide" id="recordTemplate">
     <div class="item clearfix">
         <div class="left-avatar"></div>
@@ -305,14 +307,17 @@
 <script>
     var WIKI_UPLOAD_URL = "{% url 'wiki_upload' project_id=request.tracer.project.id %}";
     var ISSUES_RECORD_API = "{% url 'issues_record' project_id=request.tracer.project.id issues_id=issues_object.id %}";
+    var ISSUES_CHANGE_API = "{% url 'issues_change' project_id=request.tracer.project.id issues_id=issues_object.id %}";
+    var EDITOR;
 
     $(function () {
         initDatePicker();
         initEditorMd();
-        initIssuesRecord();
-        bindReply();
-        bindCancelReplyUser();
+        initIssuesRecord(); // 页面加载自动执行获取评论并展示
+        bindReply(); // 给回复绑定事件
+        bindCancelReplyUser();//点击取消回复
         bindSubmit();
+        bindChangeIssues();
     });
 
     /*
@@ -332,7 +337,8 @@
     初始化markdown编辑器（textare转换为编辑器）
      */
     function initEditorMd() {
-        editormd('editor', {
+        // EDITOR是全局变量，用于获取markdown文本框内容
+        EDITOR = editormd('editor', {
             placeholder: "请输入内容",
             height: 300,
             path: "{% static 'plugin/editor-md/lib/' %}",
@@ -340,21 +346,18 @@
             imageFormats: ["jpg", 'jpeg', 'png', 'gif'],
             imageUploadURL: WIKI_UPLOAD_URL,
             toolbarAutoFixed: false,
-            toolbarIcons: function () {
+            toolbarIcons: function () { //自定义插件
                 return ["bold", "hr", "del", "italic", "quote", "|", "image", "preview", "watch", "fullscreen", "||", "save"]
             },
             toolbarCustomIcons: {
                 save: "<input type='button' value='保 存' class='btn btn-success btn-sm' onclick='saveDesc();' />"
             },
             onload: function () {
-                this.previewing();
+                this.previewing(); //加载完成默认显示预览页面
             }
         })
     }
 
-    function saveDesc() {
-        alert(666);
-    }
 
     /*
     问题评论的初始化
@@ -379,7 +382,7 @@
     }
 
     /*
-    创建操作记录节点
+    创建操作评论记录，作为函数还可以用于提交评论动态显示
      */
     function createRecordNode(nodeDict) {
         var $item = $("#recordTemplate").find('.item').clone();
@@ -388,21 +391,27 @@
         $item.find('.user').html(nodeDict.creator);
         $item.find('.type').html(nodeDict.reply_type_text);
         $item.find('.date').html(nodeDict.datetime);
-        $item.attr({ id: nodeDict.id, username: nodeDict.creator });
+        $item.attr({ id: nodeDict.id, username: nodeDict.creator });//给.item的div添加id值
 
         if (nodeDict.parent_id) {
+            $item.find('.reply').addClass('hide'); //限制二级评论，思考：如何限制三级评论？
             // 挂在谁下
             $('#' + nodeDict.parent_id).children('.child').append($item);
         } else {
             // 根下
             $('.comment-list').append($item);
         }
+        // 给修改记录加点样式
+        if (nodeDict.reply_type_text == "修改记录") {
+            $item.find('pre').css("color","yellow");
+            $item.find('pre').css("background-color","black");
+        }
     }
 
     /*
     回复问题
      */
-    function bindReply() {
+    function bindReply() {//找到回复的人的id和名字，将隐藏的标签显示出来
         $('.comment-list').on('click', '.reply', function () {
             var $item = $(this).parent().parent().parent();
             var id = $item.attr('id');
@@ -426,7 +435,7 @@
      */
     function bindSubmit() {
         $('#btnSubmit').click(function () {
-            $("#commentText .error-msg").text("");
+            $("#commentText .error-msg").text(""); // 点击清空错误信息
             $.ajax({
                 url: ISSUES_RECORD_API,
                 type: "POST",
@@ -449,6 +458,43 @@
         })
 
     }
+    
+    function bindChangeIssues() {
+        // form表单每个字段都有class：form-control，绑定change事件
+        $('#editForm').find('.form-control').change(function () {
+            // 内容变更
+            var postDict = { name: $(this).attr('name'), value: $(this).val() };
+            postAjaxData(postDict);
+
+        });
+    }
+
+    function saveDesc() {
+        var postDict = { name: 'desc', value: EDITOR.getValue() };
+        postAjaxData(postDict);
+    }
+    function postAjaxData(postDict) {
+            $('#id_' + postDict.name).parent().next('.error-msg').text("");
+
+            $.ajax({
+                url: ISSUES_CHANGE_API,
+                type: "POST",
+                header: {  // 发送json要带头部（这是规范，不带也没问题）
+                    "Content-Type": "application/json;charset=utf-8"
+                },
+                data: JSON.stringify(postDict), //序列化
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        createRecordNode(res.data);
+                    } else {
+                        // 找到该字段的位置id_issues_type
+                        $('#id_' + postDict.name).parent().next('.error-msg').text(res.error);
+                    }
+                }
+            })
+        }
+
 </script>
 
 
