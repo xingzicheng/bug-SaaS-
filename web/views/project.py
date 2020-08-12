@@ -60,7 +60,7 @@ def project_list(request):
             create_bucket(bucket, region)
         except CosClientError as e:
             # form.errors是一个对象：{ "name" : [ "字段不能为空",  ] },所以给它构造成这样就可以模拟raise ValidationError
-            form.errors['name'] = ["项目名只能是数字字母和“-”"]
+            form.errors['name'] = [" 项目名只能是数字字母和“-” "]
             return JsonResponse({'status': False, 'error': form.errors})
 
         # 验证通过：项目名、颜色、描述 + creator谁创建的项目？

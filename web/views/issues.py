@@ -2,30 +2,143 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from web.forms.issues import IssuesModelForm, IssuesReplyModelForm
+from web.forms.issues import IssuesModelForm, IssuesReplyModelForm, InviteModelForm
 from web import models
 import json
 from utils.pagination import Pagination
+from utils.encrypt import uid
+from django.utils.safestring import mark_safe
+import datetime
+from django.urls import reverse
 
+# 组合筛选小组件
+class CheckFilter(object):
+    def __init__(self, name, data_list, request):
+        self.name = name
+        self.data_list = data_list
+        self.request = request
+    # 可迭代对象，生成筛选框
+    def __iter__(self):
+        # data_list是model里面的choices( (2,"处理中")， )
+        for item in self.data_list:
+            key = str(item[0])# 统一转化为字符串
+            text = item[1]
+            ck = ""
+            # 如果当前用户请求的URL中status和当前循环key相等，则选中
+            # value_list是[1,2,3]
+            value_list = self.request.GET.getlist(self.name)
+            if key in value_list:
+                ck = 'checked'
+                value_list.remove(key)#减少参数
+            else:
+                value_list.append(key)#增加参数
+            # 为自己生成URL
+            # 在当前URL的基础上去增加一项或者减少一项
+            query_dict = self.request.GET.copy() # 拷贝一份url的参数，status=1&age=19
+            query_dict._mutable = True # query_dict允许被修改
+            query_dict.setlist(self.name, value_list)
+            # 筛选完成回到第一页
+            if 'page' in query_dict:
+                query_dict.pop('page')
+            # 将{"status":[1,2,3],"xx",1}构造成status=1&status=2&status=3&xx=1
+            param_url = query_dict.urlencode()
+            # 没筛选时去掉url上的问号
+            if param_url:
+                url = "{}?{}".format(self.request.path_info, param_url)  # status=1&status=2&status=3&xx=1
+            else:
+                url = self.request.path_info
+
+            tpl = '<a class="cell" href="{url}"><input type="checkbox" {ck} /><label>{text}</label></a>'
+            html = tpl.format(url=url, ck=ck, text=text)
+            yield mark_safe(html)
+# 下拉框筛选
+class SelectFilter(object):
+    def __init__(self, name, data_list, request):
+        self.name = name
+        self.data_list = data_list
+        self.request = request
+
+    def __iter__(self):
+        yield mark_safe("<select class='select2' multiple='multiple' style='width:100%;' >")
+        for item in self.data_list:
+            key = str(item[0])
+            text = item[1]
+
+            selected = ""
+            value_list = self.request.GET.getlist(self.name)
+            if key in value_list:
+                selected = 'selected'
+                value_list.remove(key)
+            else:
+                value_list.append(key)
+
+            query_dict = self.request.GET.copy()
+            query_dict._mutable = True
+            query_dict.setlist(self.name, value_list)
+            if 'page' in query_dict:
+                query_dict.pop('page')
+
+            param_url = query_dict.urlencode()
+            if param_url:
+                url = "{}?{}".format(self.request.path_info, param_url)  # status=1&status=2&status=3&xx=1
+            else:
+                url = self.request.path_info
+
+            html = "<option value='{url}' {selected} >{text}</option>".format(url=url, selected=selected, text=text)
+            yield mark_safe(html)
+        yield mark_safe("</select>")
 
 def issues(request, project_id):
     if request.method == "GET":
-        # 分页获取数据
-        queryset = models.Issues.objects.filter(project_id=project_id)
+        # 根据URL做筛选，筛选条件（根据用户通过GET传过来的参数实现）
+        # ?status=1&status=2&issues_type=1
+        allow_filter_name = ['issues_type', 'status', 'priority', 'assign', 'attention']
+        condition = {}
+        for name in allow_filter_name:
+            value_list = request.GET.getlist(name)  # [1,2]
+            if not value_list:
+                continue
+            condition["{}__in".format(name)] = value_list
+        """
+        condition = {
+            "status__in":[1,2],
+            'issues_type__in':[1,]
+        }
+        """
+
+        # 分页获取数据，filter接收字典
+        queryset = models.Issues.objects.filter(project_id=project_id).filter(**condition)
 
         page_object = Pagination(
             current_page=request.GET.get('page'),
             all_count=queryset.count(),
             base_url=request.path_info,
             query_params=request.GET,
-            per_page=1
+            per_page=5
         )
         issues_object_list = queryset[page_object.start:page_object.end]
         form = IssuesModelForm(request)
+        # 外键IssuesType
+        project_issues_type = models.IssuesType.objects.filter(project_id=project_id).values_list('id', 'title')
+        # 项目参与者
+        project_total_user = [(request.tracer.project.creator_id, request.tracer.project.creator.username,)]
+        join_user = models.ProjectUser.objects.filter(project_id=project_id).values_list('user_id', 'user__username')
+        project_total_user.extend(join_user)
+
+        invite_form = InviteModelForm()
+
         context = {
             'form': form,
+            'invite_form': invite_form,
             'issues_object_list': issues_object_list,
-            'page_html': page_object.page_html()
+            'page_html': page_object.page_html(),
+            'filter_list': [
+                {'title': "问题类型", 'filter': CheckFilter('issues_type', project_issues_type, request)},
+                {'title': "状态", 'filter': CheckFilter('status', models.Issues.status_choices, request)},
+                {'title': "优先级", 'filter': CheckFilter('priority', models.Issues.priority_choices, request)},
+                {'title': "指派者", 'filter': SelectFilter('assign', project_total_user, request)},
+                {'title': "关注者", 'filter': SelectFilter('attention', project_total_user, request)},
+            ]
         }
         return render(request, 'issues.html', context)
 
@@ -260,3 +373,74 @@ def issues_change(request, project_id, issues_id):
         return JsonResponse({'status': True, 'data': create_reply_record(change_record)})
 
     return JsonResponse({'status': False, 'error': "滚"})
+
+
+def invite_url(request, project_id):
+    """ 生成邀请码 """
+
+    form = InviteModelForm(data=request.POST)
+    if form.is_valid():
+        """
+        1. 创建随机的邀请码
+        2. 验证码保存到数据库
+        3. 限制：只有创建者才能邀请
+        """
+        if request.tracer.user != request.tracer.project.creator:
+            form.add_error('period', "无权创建邀请码")
+            return JsonResponse({'status': False, 'error': form.errors})
+
+        random_invite_code = uid(request.tracer.user.mobile_phone)
+        form.instance.project = request.tracer.project
+        form.instance.code = random_invite_code
+        form.instance.creator = request.tracer.user
+        form.save()
+
+        # 将验邀请码返回给前端，前端页面上展示出来。
+        url = "{scheme}://{host}{path}".format(
+            scheme=request.scheme,
+            host=request.get_host(),
+            path=reverse('invite_join', kwargs={'code': random_invite_code})
+        )
+
+        return JsonResponse({'status': True, 'data': url})
+
+    return JsonResponse({'status': False, 'error': form.errors})
+
+
+def invite_join(request, code):
+    """ 访问邀请码 """
+
+    invite_object = models.ProjectInvite.objects.filter(code=code).first()
+    if not invite_object:
+        return render(request, 'invite_join.html', {'error': '邀请码不存在'})
+
+    if invite_object.project.creator == request.tracer.user:
+        return render(request, 'invite_join.html', {'error': '创建者无需再加入项目'})
+
+    exists = models.ProjectUser.objects.filter(project=invite_object.project, user=request.tracer.user).exists()
+    if exists:
+        return render(request, 'invite_join.html', {'error': '已加入项目无需再加入'})
+
+    # 最多允许的成员
+    max_member = request.tracer.price_policy.project_member
+    # 目前所有成员(创建者&参与者）
+    current_member = models.ProjectUser.objects.filter(project=invite_object.project).count()
+    current_member = current_member + 1
+    if current_member >= max_member:
+        return render(request, 'invite_join.html', {'error': '项目成员超限，请升级套餐'})
+
+    # 邀请码是否过期？
+    current_datetime = datetime.datetime.now()
+    limit_datetime = invite_object.create_datetime + datetime.timedelta(minutes=invite_object.period)
+    if current_datetime > limit_datetime:
+        return render(request, 'invite_join.html', {'error': '邀请码已过期'})
+
+    # 数量限制？
+    if invite_object.count:
+        if invite_object.use_count >= invite_object.count:
+            return render(request, 'invite_join.html', {'error': '邀请码数据已使用完'})
+        invite_object.use_count += 1
+        invite_object.save()
+
+    models.ProjectUser.objects.create(user=request.tracer.user, project=invite_object.project)
+    return render(request, 'invite_join.html', {'project': invite_object.project})
