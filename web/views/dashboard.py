@@ -3,6 +3,11 @@ from django.shortcuts import render
 from django.db.models import Count
 from web import models
 
+import time
+import datetime
+from django.http import JsonResponse
+from django.db.models import Count
+
 
 def dashboard(request, project_id):
     """ 概览 """
@@ -28,3 +33,25 @@ def dashboard(request, project_id):
         'top_ten_object': top_ten
     }
     return render(request, 'dashboard.html', context)
+
+
+def issues_chart(request, project_id):
+    """ 在概览页面生成highcharts所需的数据 """
+    today = datetime.datetime.now().date()
+    date_dict = collections.OrderedDict()
+    for i in range(0, 30):
+        date = today - datetime.timedelta(days=i)
+        date_dict[date.strftime("%Y-%m-%d")] = [time.mktime(date.timetuple()) * 1000, 0]
+
+    # select xxxx,1 as ctime from xxxx
+    # select id,name,email from table;
+    # select id,name, strftime("%Y-%m-%d",create_datetime) as ctime from table;
+    # mysql这样写格式化时间:"DATE_FORMAT(web_transaction.create_datetime,'%%Y-%%m-%%d')",如下是sqlite
+    result = models.Issues.objects.filter(project_id=project_id,
+                                          create_datetime__gte=today - datetime.timedelta(days=30)).extra(
+        select={'ctime': "strftime('%%Y-%%m-%%d',web_issues.create_datetime)"}).values('ctime').annotate(ct=Count('id'))
+
+    for item in result:
+        date_dict[item['ctime']][1] = item['ct']
+
+    return JsonResponse({'status': True, 'data': list(date_dict.values())})

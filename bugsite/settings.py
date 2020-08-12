@@ -110,13 +110,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 #LANGUAGE_CODE = 'en-us'
 LANGUAGE_CODE = 'zh-hans'
+# datetime.datetime.now() / datetime.datetime.utcnow() => utc时间
+# TIME_ZONE = 'UTC'
 
+# datetime.datetime.now() - 东八区时间 / datetime.datetime.utcnow() => utc时间
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_L10N = True
-
+# 影响自动生成数据库时间字段；
+#       USE_TZ = True，创建UTC时间写入到数据库。
+#       USE_TZ = False，根据TIME_ZONE设置的时区进行创建时间并写入数据库
 USE_TZ = True
 
 
