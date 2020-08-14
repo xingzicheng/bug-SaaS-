@@ -30,7 +30,11 @@ class AuthMiddleware(MiddlewareMixin):
         1. 获取当用户访问的URL
         2. 检查URL是否在白名单中，如果在则可以继续向后访问，如果不在则进行判断是否已登录
         """
+        # 白名单不拦截
         if request.path_info in settings.WHITE_REGEX_URL_LIST:
+            return
+        # 邀请页面不拦截
+        if request.path_info.startswith("/invite/join/"):
             return
 
         # 检查用户是否已登录，已登录继续往后走；未登录则返回登录页面。

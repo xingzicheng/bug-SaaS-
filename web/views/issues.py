@@ -1,5 +1,5 @@
 
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from web.forms.issues import IssuesModelForm, IssuesReplyModelForm, InviteModelForm
@@ -409,6 +409,10 @@ def invite_url(request, project_id):
 
 def invite_join(request, code):
     """ 访问邀请码 """
+    # 用户没登录
+    if not request.tracer.user:
+        return render(request, 'invite_join.html', {'error': '登录后才可加入项目，点击右上角进入官网登录'})
+
     current_datetime = datetime.datetime.now()
 
     invite_object = models.ProjectInvite.objects.filter(code=code).first()
@@ -451,7 +455,7 @@ def invite_join(request, code):
     # 数量限制？
     if invite_object.count:
         if invite_object.use_count >= invite_object.count:
-            return render(request, 'invite_join.html', {'error': '邀请码数据已使用完'})
+            return render(request, 'invite_join.html', {'error': '邀请码数量已使用完'})
         invite_object.use_count += 1
         invite_object.save()
 
