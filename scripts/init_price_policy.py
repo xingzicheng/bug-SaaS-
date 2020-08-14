@@ -1,6 +1,6 @@
 import base
 from web import models
-
+# 第一个执行
 def run():
     exists = models.PricePolicy.objects.filter(category=1, title="个人免费版").exists()
     if not exists:
@@ -16,4 +16,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    #run()

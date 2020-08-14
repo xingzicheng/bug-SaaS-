@@ -1,8 +1,8 @@
 import base
 from web import models
-
+# 测试时项目成员不够用，扩充一下，注意id=1必须为个人免费版
 def run():
-        models.PricePolicy.objects.filter(category=1).update(
+        models.PricePolicy.objects.filter(id=1, category=1).update(
             category=1,
             title="个人免费版",
             price=0,
@@ -14,4 +14,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    #run()

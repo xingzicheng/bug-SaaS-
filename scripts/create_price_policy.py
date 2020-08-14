@@ -1,7 +1,7 @@
 import base
 from web import models
 
-
+# 第二个执行
 def run():
     models.PricePolicy.objects.create(
         title='VIP',
@@ -35,4 +35,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    #run()
